@@ -131,7 +131,7 @@ include_directories(
 # add_dependencies(ti2726-b-embedded-software ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(line linefollower_6.cpp)
+add_executable(linefollower_6 src/ti2726-b-embedded-software/linefollower_6.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
