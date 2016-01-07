@@ -9,6 +9,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  sensor_msgs
+  cv_bridge
+  image_transport
 )
 
 ## System dependencies are found with CMake's conventions
@@ -102,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ti2726-b-embedded-software
-  CATKIN_DEPENDS message_runtime roscpp rospy std_msgs
+  CATKIN_DEPENDS message_runtime roscpp rospy std_msgs sensor_msgs cv_bridge image_transport
 #  DEPENDS system_lib
 )
 
@@ -128,7 +131,7 @@ include_directories(
 # add_dependencies(ti2726-b-embedded-software ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-# add_executable(ti2726-b-embedded-software_node src/ti2726-b-embedded-software_node.cpp)
+add_executable(line linefollower_6.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

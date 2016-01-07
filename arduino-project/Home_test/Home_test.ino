@@ -20,22 +20,29 @@ Servo servoRight;
 SimpleTimer timer;
 int stopid;
 
+void moveRobot(double x, double z){
+  double left = 1500 + 400 * x;
+  double right = 1500 - 400 * x;
+   left = left - z * 200;
+   right = right - z * 200;
+ 
+  servoLeft.writeMicroseconds(left);
+  servoRight.writeMicroseconds(right);
+}
+
+
 void messageCb( const geometry_msgs::Twist& robot_controls){
-  if(robot_controls.linear.x>1.0){
-     moveForward();
-   } else if(robot_controls.angular.z < 0){
-     turnRight();
-   } else if(robot_controls.angular.z > 0){
-     turnLeft();
-   } else{
-      backward();
-  }  
+  
+  moveRobot(robot_controls.linear.x, robot_controls.angular.z);
+  
   if(timer.isEnabled(stopid)) {  
     timer.restartTimer(stopid);
   } else{
     stopid = timer.setTimeout(500, stopRobot);
   }
 }
+
+
 
 ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
 
@@ -88,6 +95,7 @@ void loop()
   byte wLeft = digitalRead(5);
   byte wRight = digitalRead(7);
   if(wLeft == 0 || wRight == 0){
-    stopRobot();
-  } 
+     servoRight.writeMicroseconds(1500);
+     servoLeft.writeMicroseconds(1500);
+  }
 }
