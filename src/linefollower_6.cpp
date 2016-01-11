@@ -64,36 +64,48 @@ cv::Canny(binary, dst, 50, 200, 3);
  cv::HoughLinesP(dst, lines, 1, 0.01, 10, 50, 100);
 
   int dif = 0;
-  for(int i = 0; i<lines.size(); i++){
-    cv::Vec4i l = lines[i];
-    //std::cout << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << std::endl;
-    cv::line(cv_ptr->image, cv::Point(l[0], l[1])+myROI.tl(), cv::Point(l[2], l[3])+myROI.tl(), cv::Scalar(0, 0, 255), 3, CV_AA);
-    dif = dif + ( l[1] - l[3]);
+  if(lines.size()>1){
+  cv::Vec4i l = lines[0];
+  cv::line(cv_ptr->image, cv::Point(l[0], l[1])+myROI.tl(), cv::Point(l[2], l[3])+myROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
+  l = lines[1];
+  cv::line(cv_ptr->image, cv::Point(l[0], l[1])+myROI.tl(), cv::Point(l[2], l[3])+myROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
+
+    for(int i = 2; i<lines.size(); i++){
+      l = lines[i];
+      //std::cout << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << std::endl;
+     // cv::line(cv_ptr->image, cv::Point(l[0], l[1])+myROI.tl(), cv::Point(l[2], l[3])+myROI.tl(), cv::Scalar(0, 0, 255), 3, CV_AA);
+      dif = dif + ( l[1] - l[3]);
+    }
+  int highLineY;
+  int lowLineY;
+  geometry_msgs::Twist cmd_vel_msg;
+  if(lines[0][1] + 0.5 * (lines[0][3]-lines[0][1])>lines[1][1] + 0.5 * (lines[1][3]-lines[1][1])){
+    highLineY = lines[0][1] + 0.5 * (lines[0][3]-lines[0][1]);
+    lowLineY = lines[1][1] + 0.5 * (lines[1][3]-lines[1][1]);
+  }else{
+    highLineY = lines[1][1] + 0.5 * (lines[1][3]-lines[1][1]);
+    lowLineY = lines[0][1] + 0.5 * (lines[0][3]-lines[1][1]);
   }
+  if(lowLineY<((binary.size().height*3/10)+myROI.tl().y)){
+    cmd_vel_msg.angular.z = 1;
+  }else if(highLineY>((binary.size().height*6/10)+myROI.tl().y)){
+    cmd_vel_msg.angular.z = -1;
+  }else{
+    cmd_vel_msg.linear.x = 0.5;
+  }
+	cmd_vel_pub.publish(cmd_vel_msg);
+  cv::line(cv_ptr->image, myROI.tl() + cv::Point(myROI.size().width/2,highLineY), myROI.tl() +  cv::Point(myROI.size().width/2, lowLineY), cv::Scalar(255, 255, 0), 3, CV_AA);
+  }
+  cv::line(cv_ptr->image, cv::Point(0, binary.size().height*3/10)+myROI.tl(), cv::Point(binary.size().width, binary.size().height*3/10)+myROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+  cv::line(cv_ptr->image, cv::Point(0, binary.size().height/2)+myROI.tl(), cv::Point(binary.size().width, binary.size().height/2)+myROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+  cv::line(cv_ptr->image, cv::Point(0, binary.size().height*7/10)+myROI.tl(), cv::Point(binary.size().width, binary.size().height*7/10)+myROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
   cv::rectangle(cv_ptr->image, myROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
 
   image_pub_.publish(cv_ptr->toImageMsg());
-/*cv_bridge::CvImage img_bridge;
-sensor_msgs::Image img_msg;
-std_msgs::Header header; 
-img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, binary);
-img_bridge.toImageMsg(img_msg); // from cv_bridge to sensor_msgs::Image*/
- // image_pub_.publish(img_msg);
   if(lines.size() > 0){
     dif = dif / lines.size();
   }
-  geometry_msgs::Twist cmd_vel_msg;
-  if(dif < 5  && dif > -5){
-    cmd_vel_msg.linear.x = 0.5;
-  } else if(dif > 0){
-    cmd_vel_msg.angular.z = 1;
-  } else {
-    cmd_vel_msg.angular.z = -1;
-  }
-  //imshow("detected lines", cdst);
-  //cv::waitKey();
 	//Send the geometry twist message on the cmd_vel topic
-	cmd_vel_pub.publish(cmd_vel_msg);
   }
 };
 
