@@ -41,7 +41,7 @@ public:
   {	
 	//convert the incoming msg to a cv image.
 	cv_bridge::CvImagePtr cv_ptr;
-  cv::Mat img_rgb; 
+	cv::Mat img_rgb; 
     	try
     	{
     	  cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -52,20 +52,33 @@ public:
      	 ROS_ERROR("cv_bridge exception: %s", e.what());
      	 return;
     	}
-  cv::Mat dst, cdst;
-	cv::Canny(img_rgb, dst, 50, 200, 3);
+  cv::Mat dst, binary, cropped, cdst;
+  cvtColor(img_rgb,binary,CV_RGB2GRAY);
+ // imwrite("image_before_tresh.jpg", binary); // UNCOMMENT FOR DEBUGGING
+  threshold( binary, binary, 128 , 255,1);
+//  imwrite("image_after.jpg", binary); // UNCOMMENT FOR DEBUGGING WARNING SLOW
   std::vector<cv::Vec4i> lines;
+  cv::Rect myROI =  cv::Rect(300, 0, 100, binary.size().height);
+  binary =  binary( myROI);
+cv::Canny(binary, dst, 50, 200, 3);
+ cv::HoughLinesP(dst, lines, 1, 0.01, 10, 50, 100);
 
-  cv::HoughLinesP(dst, lines, 1, 0.01, 10, 50, 10);
   int dif = 0;
   for(int i = 0; i<lines.size(); i++){
     cv::Vec4i l = lines[i];
     //std::cout << l[0] << " " << l[1] << " " << l[2] << " " << l[3] << " " << std::endl;
-    cv::line(cv_ptr->image, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 0, 255), 3, CV_AA);
+    cv::line(cv_ptr->image, cv::Point(l[0], l[1])+myROI.tl(), cv::Point(l[2], l[3])+myROI.tl(), cv::Scalar(0, 0, 255), 3, CV_AA);
     dif = dif + ( l[1] - l[3]);
   }
+  cv::rectangle(cv_ptr->image, myROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
 
   image_pub_.publish(cv_ptr->toImageMsg());
+/*cv_bridge::CvImage img_bridge;
+sensor_msgs::Image img_msg;
+std_msgs::Header header; 
+img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, binary);
+img_bridge.toImageMsg(img_msg); // from cv_bridge to sensor_msgs::Image*/
+ // image_pub_.publish(img_msg);
   if(lines.size() > 0){
     dif = dif / lines.size();
   }
