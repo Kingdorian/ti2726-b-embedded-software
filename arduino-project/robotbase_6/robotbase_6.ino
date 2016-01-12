@@ -76,7 +76,7 @@ void messageCb( const geometry_msgs::Twist& robot_controls) {
 //Subscribe to the cmd_vel topic
 ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
 
-//Move leftmotor and right motor between 0 and 255
+//Move leftmotor and right motor between -255 and 255
 void move(double leftmotor, double rightmotor){ 
   
     // Enable motors
