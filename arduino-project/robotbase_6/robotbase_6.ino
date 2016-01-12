@@ -77,6 +77,7 @@ void messageCb( const geometry_msgs::Twist& robot_controls) {
 ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
 
 //Move leftmotor and right motor between -255 and 255
+//Negative is opposite direction from positive
 void move(double leftmotor, double rightmotor){ 
   
     // Enable motors
