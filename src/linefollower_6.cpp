@@ -54,15 +54,18 @@ public:
     	 ROS_ERROR("cv_bridge exception: %s", e.what());
      	 return;
     }
-    cv::Mat dst, cropped;
+    cv::Mat dst, cropped, gray,binary, canned;
     // Converting rgb to black/white
     std::vector<cv::Vec4i> lines;
     // Region of interest
     cv::Rect ROI =  cv::Rect(regionYOffset, 0,regionwidth, img_rgb.size().height);
     cropped =  img_rgb(ROI);
     // Getting contrast lines
-    cv::Canny(cropped, dst, 50, 200, 3);
-    cv::HoughLinesP(dst, lines, 1, 0.01, 10, 50, 100);
+		cvtColor(cropped,gray,CV_RGB2GRAY);
+		threshold( gray, binary, 128 , 255,1);
+		cv::Canny(binary, canned, 50, 200, 3);
+    cv::HoughLinesP(canned, lines, 1, 0.01, 10, 50, 100);
+
     if(lines.size()>1){
       cv::Vec4i l = lines[0];
       cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
@@ -82,7 +85,9 @@ public:
         lowLineY = lines[0][1] + (0.5 * lines[0][3]-lines[1][1]);
       }
       // Choosing message based on high and low line position
-      if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
+			if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
+				cmd_vel_msg.linear.x = 0.5;
+			}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
         cmd_vel_msg.angular.z = 1;
       }else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
         cmd_vel_msg.angular.z = -1;
