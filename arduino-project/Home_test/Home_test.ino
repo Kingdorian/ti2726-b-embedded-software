@@ -1,15 +1,11 @@
+
 #include <ros.h>
 #include <ArduinoHardware.h>
-#include <Servo.h>
 #include <SimpleTimer.h>
-#include <std_msgs/String.h>
 #include <geometry_msgs/Twist.h>
-
-//class NewHardware : public ArduinoHardware{
-  
-//public : NewHardware ( ) : ArduinoHardware(&Serial1,
-//57600) {};
-//};
+#include <Ultrasonic.h>
+#include <math.h>
+#include <Servo.h>
 
 
 ros::NodeHandle nh;
@@ -20,21 +16,33 @@ Servo servoRight;
 SimpleTimer timer;
 int stopid;
 
-void moveRobot(double x, double z){
-  double left = 1500 + 400 * x;
-  double right = 1500 - 400 * x;
-   left = left - z * 200;
-   right = right - z * 200;
- 
-  servoLeft.writeMicroseconds(left);
-  servoRight.writeMicroseconds(right);
-}
-
-
 void messageCb( const geometry_msgs::Twist& robot_controls){
   
-  moveRobot(robot_controls.linear.x, robot_controls.angular.z);
+  //Determine velocity 
+  double vel = fabs(robot_controls.linear.x);
+  if(vel < fabs(robot_controls.angular.z)){
+    vel = fabs(robot_controls.angular.z);
+  }
+    
+  //check if there is an obstactle and call move
+   if(!(digitalRead(5) == 0 || digitalRead(7) == 0)){
+    if(robot_controls.linear.x > 0){
+      move(255*vel, 255*vel);
+    } else if(robot_controls.angular.z < 0){
+      move(255*vel, -255*vel);
+    } else if(robot_controls.angular.z > 0){
+      move(-255*vel, 255*vel);
+    }
+  } else {
+     move(0, 0);
+  }
   
+  //Even with an obstactle you can drive backwards
+  if(robot_controls.linear.x < 0){
+    move(-255*vel, -255*vel);
+  }
+    
+  //Check if there is already a stop timer active
   if(timer.isEnabled(stopid)) {  
     timer.restartTimer(stopid);
   } else{
@@ -42,12 +50,36 @@ void messageCb( const geometry_msgs::Twist& robot_controls){
   }
 }
 
+//Move leftmotor and right motor between 0 and 255
+void move(double leftmotor, double rightmotor){ 
+  
+    if(rightmotor > 0){
+      //Forward right motor
+      servoRight.writeMicroseconds(1300);
+    } else if(rightmotor < 0){
+       servoRight.writeMicroseconds(1700);
+    }else{
+      servoRight.writeMicroseconds(1300);  
+    }
+    
+    if(leftmotor > 0){
+      //Forward left motor
+      servoLeft.writeMicroseconds(1700);;
+    } else if(leftmotor < 0){
+      servoLeft.writeMicroseconds(1300);
+    } else{
+      servoLeft.writeMicroseconds(1500);    
+    }  
+}
 
-
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
+void stopRobot(){
+  servoLeft.writeMicroseconds(1500);
+  servoRight.writeMicroseconds(1500);
+}
 
 void setup()
 {
+  ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
   pinMode(7, INPUT);
   pinMode(5, INPUT);
   nh.initNode();
@@ -55,47 +87,12 @@ void setup()
   servoLeft.attach(13);
   servoRight.attach(12);
   stopRobot(); 
-  stopid = timer.setTimeout(500, stopRobot);
-}
-
-
-
-
-void stopRobot(){
-  servoLeft.writeMicroseconds(1500);
-  servoRight.writeMicroseconds(1500);
-}
-
-
-
-void moveForward(){
-  servoLeft.writeMicroseconds(1700);
-  servoRight.writeMicroseconds(1300);
-}
-
-void turnRight(){
-  servoLeft.writeMicroseconds(1700);
-  servoRight.writeMicroseconds(1700);
-}
-
-void turnLeft(){   
-  servoLeft.writeMicroseconds(1300);
-  servoRight.writeMicroseconds(1300);
-}
-
-void backward(){   
-  servoLeft.writeMicroseconds(1300);
-  servoRight.writeMicroseconds(1700);
+  
 }
 
 void loop()
 {
   nh.spinOnce();
   timer.run();
-  byte wLeft = digitalRead(5);
-  byte wRight = digitalRead(7);
-  if(wLeft == 0 || wRight == 0){
-     servoRight.writeMicroseconds(1500);
-     servoLeft.writeMicroseconds(1500);
-  }
+  delay(10);
 }
