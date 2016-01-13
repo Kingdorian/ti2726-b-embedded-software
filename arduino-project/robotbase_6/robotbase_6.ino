@@ -35,19 +35,20 @@ ros::NodeHandle_<NewHardware> nh;
 
 // the timer object
 SimpleTimer timer;
+
 //ID of the stop timer
 int stopid;
 
 //Call back when twist message received
 void messageCb( const geometry_msgs::Twist& robot_controls) {
   
-  //Determine velocity 
+  //Determine velocity based on message
   double vel = fabs(robot_controls.linear.x);
   if(vel < fabs(robot_controls.angular.z)){
     vel = fabs(robot_controls.angular.z);
   }
     
-  //check if there is an obstactle and call move
+  //check if there is an obstactle and call move with right parameters
   if(ultrasonic.Ranging(CM) > 10){
     if(robot_controls.linear.x > 0){
       move(255*vel, 255*vel);
@@ -55,17 +56,19 @@ void messageCb( const geometry_msgs::Twist& robot_controls) {
       move(255*vel, -255*vel);
     } else if(robot_controls.angular.z > 0){
       move(-255*vel, 255*vel);
+    } else {
+      move(0, 0);
     }
   } else {
      move(0, 0);
   }
   
-  //Even with an obstactle you can drive backwards
+  //Even with an obstactle in front you can drive backwards
   if(robot_controls.linear.x < 0){
     move(-255*vel, -255*vel);
   }
     
-  //Check if there is already a stop timer active
+  //Check if there is already a stop timer active and restart to stop after 500 ms
   if(timer.isEnabled(stopid)) {  
     timer.restartTimer(stopid);
   } else{
@@ -112,6 +115,7 @@ void stopRobot(){
     analogWrite(EN_L, 0);
 }
 
+//Setup the ros node and be sure the robot is standing still
 void setup() {
   nh.initNode();
   nh.subscribe(sub);

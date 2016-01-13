@@ -43,11 +43,7 @@ void messageCb( const geometry_msgs::Twist& robot_controls){
   }
     
   //Check if there is already a stop timer active
-  if(timer.isEnabled(stopid)) {  
-    timer.restartTimer(stopid);
-  } else{
-    stopid = timer.setTimeout(500, stopRobot);
-  }
+  timer.restartTimer(stopid);
 }
 
 //Move leftmotor and right motor between 0 and 255
@@ -59,7 +55,7 @@ void move(double leftmotor, double rightmotor){
     } else if(rightmotor < 0){
        servoRight.writeMicroseconds(1700);
     }else{
-      servoRight.writeMicroseconds(1300);  
+      servoRight.writeMicroseconds(1500);  
     }
     
     if(leftmotor > 0){
@@ -76,10 +72,10 @@ void stopRobot(){
   servoLeft.writeMicroseconds(1500);
   servoRight.writeMicroseconds(1500);
 }
-
+  ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
 void setup()
 {
-  ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &messageCb );
+
   pinMode(7, INPUT);
   pinMode(5, INPUT);
   nh.initNode();
@@ -87,7 +83,7 @@ void setup()
   servoLeft.attach(13);
   servoRight.attach(12);
   stopRobot(); 
-  
+  stopid = timer.setInterval(500, stopRobot);
 }
 
 void loop()
