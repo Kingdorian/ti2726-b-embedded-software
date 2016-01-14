@@ -41,7 +41,7 @@ public:
 //SOME CONSTANTS
     // width of ROI in px
     int regionwidth = 100;
-    int regionYOffset = 1000;
+    int regionYOffset = 1100;
     // 1/2 height of region line is allowed to be in
     const float lineregion = 2/10;
 	  //convert the incoming msg to a cv mat.
@@ -54,65 +54,56 @@ public:
     	 ROS_ERROR("cv_bridge exception: %s", e.what());
      	 return;
     }
-    cv::Mat dst, cropped;
-		int dirs[3] =  {0, 0, 0};
-	    for(int i = 0; i<3; i++){
-			regionYOffset+=regionwidth;
-			cv::Mat gray,binary, canned;
-			// Converting rgb to black/white
-			std::vector<cv::Vec4i> lines;
-			// Region of interest
-			cv::Rect ROI =  cv::Rect(regionYOffset, 0,regionwidth, img_rgb.size().height);
-			cropped =  img_rgb(ROI);
-			// Getting contrast lines
-			cvtColor(cropped,gray,CV_RGB2GRAY);
-			threshold( gray, binary, 200 , 255,1);
-			cv::Canny(binary, canned, 50, 200, 3);
-			cv::HoughLinesP(canned, lines, 1, 0.01, 10, 50, 100);
+    cv::Mat dst, cropped, gray,binary, canned;
+    // Converting rgb to black/white
+    std::vector<cv::Vec4i> lines;
+    // Region of interest
+    cv::Rect ROI =  cv::Rect(regionYOffset, 0,regionwidth, img_rgb.size().height);
+    cropped =  img_rgb(ROI);
+    // Getting contrast lines
+		cvtColor(cropped,gray,CV_RGB2GRAY);
+		threshold( gray, binary, 180 , 255,1);
+		cv::Canny(binary, canned, 50, 200, 3);
+    cv::HoughLinesP(canned, lines, 1, 0.01, 10, 50, 100);
 
-			if(lines.size()>1){
-			  cv::Vec4i l = lines[0];
-			  cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
-			  l = lines[1];
-			  cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
-			  // Determining which is the higher and wich is the lower line
-			  int highLineY = lines[0][1] + (0.5 * (lines[0][3]-lines[0][1]));
-			  int lowLineY = lines[1][1] + (0.5 * (lines[1][3]-lines[1][1]));
-			  if(lines[0][1] + 0.5 * (lines[0][3]-lines[0][1])<lines[1][1] + (0.5*lines[1][3]-lines[1][1])){
-			  	highLineY = lines[1][1] + (0.5 * lines[1][3]-lines[1][1]);
-			  	lowLineY = lines[0][1] + (0.5 * lines[0][3]-lines[1][1]);
-				}
-				// Choosing message based on high and low line position
-				if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-					dirs[0]++;
-				}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
-					dirs[1]++;
-				}else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-					dirs[2]++;
-			  	}else{
-					dirs[i] = 2;
-				}
-		  	cv::line(cv_ptr->image, ROI.tl() + cv::Point(ROI.size().width/2,highLineY), ROI.tl() +  cv::Point(ROI.size().width/2, lowLineY), cv::Scalar(255, 255, 0), 3, CV_AA);
-			}
-			cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*3/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*3/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
-			cv::line(cv_ptr->image, cv::Point(0, ROI.size().height/2)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height/2)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
-			cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*7/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*7/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
-			cv::rectangle(cv_ptr->image, ROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
+    if(lines.size()>1){
+      cv::Vec4i l = lines[0];
+      cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
+      l = lines[1];
+      cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
+      //Drawing contrast lines
+      for(int i = 2; i<lines.size(); i++){
+        l = lines[i];
+       // cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 0, 255), 3, CV_AA);
+      }
+      geometry_msgs::Twist cmd_vel_msg;
+      // Determining which is the higher and wich is the lower line
+      int highLineY = lines[0][1] + (0.5 * (lines[0][3]-lines[0][1]));
+      int lowLineY = lines[1][1] + (0.5 * (lines[1][3]-lines[1][1]));
+      if(lines[0][1] + 0.5 * (lines[0][3]-lines[0][1])<lines[1][1] + (0.5*lines[1][3]-lines[1][1])){
+        highLineY = lines[1][1] + (0.5 * lines[1][3]-lines[1][1]);
+        lowLineY = lines[0][1] + (0.5 * lines[0][3]-lines[1][1]);
+      }
+      // Choosing message based on high and low line position
+			if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
+				cmd_vel_msg.linear.x = 0.5;
+			}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
+        cmd_vel_msg.angular.z = -0.3;
+      }else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
+        cmd_vel_msg.angular.z = 0.3;
+      }else{
+        cmd_vel_msg.linear.x = 0.5;
+      }
+	    cmd_vel_pub.publish(cmd_vel_msg);
+      cv::line(cv_ptr->image, ROI.tl() + cv::Point(ROI.size().width/2,highLineY), ROI.tl() +  cv::Point(ROI.size().width/2, lowLineY), cv::Scalar(255, 255, 0), 3, CV_AA);
+    }
+    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*3/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*3/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height/2)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height/2)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*7/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*7/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+    cv::rectangle(cv_ptr->image, ROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
 
-			image_pub_.publish(cv_ptr->toImageMsg());
-			  //Send the geometry twist message on the cmd_vel topic
-	}
-	geometry_msgs::Twist cmd_vel_msg;
-	if(dirs[0]>1){
-			cmd_vel_msg.linear.x = 0.5;
-	}else if(dirs[1]>1){
-		cmd_vel_msg.angular.z = -0.3;
-  }else if(dirs[2]>1){
-		cmd_vel_msg.angular.z = 0.3;
-  }else{
-		cmd_vel_msg.linear.x = 0.5;
-	}
-	cmd_vel_pub.publish(cmd_vel_msg);
+    image_pub_.publish(cv_ptr->toImageMsg());
+	  //Send the geometry twist message on the cmd_vel topic
     }
 };
 
