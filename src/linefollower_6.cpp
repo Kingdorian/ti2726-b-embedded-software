@@ -41,7 +41,7 @@ public:
 //SOME CONSTANTS
     // width of ROI in px
     int regionwidth = 100;
-    int regionYOffset = 1300;
+    int regionYOffset = 1100;
     // 1/2 height of region line is allowed to be in
     const float lineregion = 2/10;
 	  //convert the incoming msg to a cv mat.
@@ -62,7 +62,7 @@ public:
     cropped =  img_rgb(ROI);
     // Getting contrast lines
 		cvtColor(cropped,gray,CV_RGB2GRAY);
-		threshold( gray, binary, 128 , 255,1);
+		threshold( gray, binary, 180 , 255,1);
 		cv::Canny(binary, canned, 50, 200, 3);
     cv::HoughLinesP(canned, lines, 1, 0.01, 10, 50, 100);
 
@@ -88,9 +88,9 @@ public:
 			if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
 				cmd_vel_msg.linear.x = 0.5;
 			}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = -0.2;
+        cmd_vel_msg.angular.z = -0.3;
       }else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = 0.2;
+        cmd_vel_msg.angular.z = 0.3;
       }else{
         cmd_vel_msg.linear.x = 0.5;
       }
