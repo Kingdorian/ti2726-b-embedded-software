@@ -41,7 +41,7 @@ public:
 //SOME CONSTANTS
     // width of ROI in px
     int regionwidth = 100;
-    int regionYOffset = 300;
+    int regionYOffset = 1300;
     // 1/2 height of region line is allowed to be in
     const float lineregion = 2/10;
 	  //convert the incoming msg to a cv mat.
@@ -88,9 +88,9 @@ public:
 			if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
 				cmd_vel_msg.linear.x = 0.5;
 			}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = 1;
+        cmd_vel_msg.angular.z = -0.2;
       }else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = -1;
+        cmd_vel_msg.angular.z = 0.2;
       }else{
         cmd_vel_msg.linear.x = 0.5;
       }
@@ -103,7 +103,6 @@ public:
     cv::rectangle(cv_ptr->image, ROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
 
     image_pub_.publish(cv_ptr->toImageMsg());
-
 	  //Send the geometry twist message on the cmd_vel topic
     }
 };
