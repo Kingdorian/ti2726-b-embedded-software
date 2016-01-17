@@ -41,7 +41,7 @@ public:
 //SOME CONSTANTS
     // width of ROI in px
     int regionwidth = 100;
-    int regionYOffset = 1100;
+    int regionYOffset = 1200;
     // 1/2 height of region line is allowed to be in
     const float lineregion = 2/10;
 	  //convert the incoming msg to a cv mat.
@@ -65,7 +65,7 @@ public:
 		threshold( gray, binary, 180 , 255,1);
 		cv::Canny(binary, canned, 50, 200, 3);
     cv::HoughLinesP(canned, lines, 1, 0.01, 10, 50, 100);
-
+    geometry_msgs::Twist cmd_vel_msg;
     if(lines.size()>1){
       cv::Vec4i l = lines[0];
       cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 255, 255), 3, CV_AA);
@@ -76,7 +76,6 @@ public:
         l = lines[i];
        // cv::line(cv_ptr->image, cv::Point(l[0], l[1])+ROI.tl(), cv::Point(l[2], l[3])+ROI.tl(), cv::Scalar(0, 0, 255), 3, CV_AA);
       }
-      geometry_msgs::Twist cmd_vel_msg;
       // Determining which is the higher and wich is the lower line
       int highLineY = lines[0][1] + (0.5 * (lines[0][3]-lines[0][1]));
       int lowLineY = lines[1][1] + (0.5 * (lines[1][3]-lines[1][1]));
@@ -86,20 +85,20 @@ public:
       }
       // Choosing message based on high and low line position
 			if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)&&highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-				cmd_vel_msg.linear.x = 0.5;
+				cmd_vel_msg.linear.x = 0.2;
 			}else if(lowLineY<((img_rgb.size().height*3/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = -0.3;
+        cmd_vel_msg.angular.z = -0.35;
       }else if(highLineY>((img_rgb.size().height*6/10)+ROI.tl().y)){
-        cmd_vel_msg.angular.z = 0.3;
+        cmd_vel_msg.angular.z = 0.35;
       }else{
-        cmd_vel_msg.linear.x = 0.5;
+        cmd_vel_msg.linear.x = 0.2;
       }
-	    cmd_vel_pub.publish(cmd_vel_msg);
       cv::line(cv_ptr->image, ROI.tl() + cv::Point(ROI.size().width/2,highLineY), ROI.tl() +  cv::Point(ROI.size().width/2, lowLineY), cv::Scalar(255, 255, 0), 3, CV_AA);
     }
-    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*3/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*3/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+    cmd_vel_pub.publish(cmd_vel_msg);
+    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*2/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*2/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
     cv::line(cv_ptr->image, cv::Point(0, ROI.size().height/2)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height/2)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
-    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*7/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*7/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
+    cv::line(cv_ptr->image, cv::Point(0, ROI.size().height*8/10)+ROI.tl(), cv::Point(ROI.size().width, ROI.size().height*8/10)+ROI.tl(), cv::Scalar(255, 0, 0), 3, CV_AA);
     cv::rectangle(cv_ptr->image, ROI, cv::Scalar(0, 255, 0), 3, CV_AA, 0);
 
     image_pub_.publish(cv_ptr->toImageMsg());
