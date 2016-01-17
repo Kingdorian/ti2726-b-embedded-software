@@ -53,9 +53,9 @@ void messageCb( const geometry_msgs::Twist& robot_controls) {
     if(robot_controls.linear.x > 0){
       move(255*vel, 255*vel);
     } else if(robot_controls.angular.z < 0){
-      move(255*vel, -255*vel);
+      move(255*vel, -0.5*255*vel);
     } else if(robot_controls.angular.z > 0){
-      move(-255*vel, 255*vel);
+      move(-0.5*255*vel, 255*vel);
     } else {
       move(0, 0);
     }
